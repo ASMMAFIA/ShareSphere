@@ -1,9 +1,9 @@
 import os
 import re
 import shutil
-import urllib.parse
+import getpass
 import argparse
-import traceback
+import urllib.parse
 from jinja2 import Environment, FileSystemLoader
 from http.server import HTTPServer, BaseHTTPRequestHandler, HTTPStatus
 from pathlib import Path
@@ -15,7 +15,7 @@ WINDOWS = OS == 'nt'
 UNIX_LIKE = OS == 'posix'
 SOURCE_FILE_PATH = Path(__file__).resolve().parent
 CURRENT_PATH = os.getcwd()
-USERNAME = os.getlogin()
+USERNAME = getpass.getlogin()
 DEFAULT_FOLDER = f"/home/{USERNAME}/Downloads" if UNIX_LIKE else fr'C:\Users\{USERNAME}\Downloads'
 READ_BUFFER = 4096 # bytes
 TEMPLATES_FOLDER = 'templates'
@@ -92,8 +92,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 shutil.copyfileobj(f, self.wfile)
         except:
-            print(self.filename)
-            traceback.print_exc()
             self.send_error(HTTPStatus.NOT_FOUND)
 
 if __name__ == '__main__':
