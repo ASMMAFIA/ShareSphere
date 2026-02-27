@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import shutil
 import getpass
@@ -15,7 +16,7 @@ WINDOWS = OS == 'nt'
 UNIX_LIKE = OS == 'posix'
 SOURCE_FILE_PATH = Path(__file__).resolve().parent
 CURRENT_PATH = os.getcwd()
-USERNAME = getpass.getlogin()
+USERNAME = getpass.getuser()
 DEFAULT_FOLDER = f"/home/{USERNAME}/Downloads" if UNIX_LIKE else fr'C:\Users\{USERNAME}\Downloads'
 READ_BUFFER = 4096 # bytes
 TEMPLATES_FOLDER = 'templates'
@@ -94,11 +95,18 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         except:
             self.send_error(HTTPStatus.NOT_FOUND)
 
+def start_server(buffer, share_path=DEFAULT_FOLDER):
+    HTTPRequestHandler.share_path = share_path
+    httpd = HTTPServer(('0.0.0.0', 8899), HTTPRequestHandler)
+    from subprocess import run
+    output = b'localhost' + b' ' + run(['hostname', '-i'], capture_output=True).stdout + b'PORT:8899'
+    output = output.decode() if buffer==sys.stdout else output
+    buffer.write(output)
+    httpd.serve_forever()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog=PROGRAM_NAME)
     parser.add_argument('-d', '--directory', action='store', default=DEFAULT_FOLDER)
     args = parser.parse_args()
     share_path = args.directory
-    HTTPRequestHandler.share_path = share_path
-    httpd = HTTPServer(('0.0.0.0', 8899), HTTPRequestHandler)
-    httpd.serve_forever()
+    start_server(sys.stdout, share_path)

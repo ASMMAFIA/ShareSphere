@@ -17,7 +17,7 @@ r'''copile with: python -m nuitka --standalone --onefile --include-data-dir=temp
 
 
 class StringSharedMemory:
-  def __init__(self, q: mp.Queue): self.queue = q
+  def __init__(self, q: mp.Queue): self.queue = q# Apparently subprocess.run uses this so I'll just make it up
 
   def write(self, s: Union[str, bytes]):
     try:
@@ -26,16 +26,16 @@ class StringSharedMemory:
     except:
       pass
 
-  def read(self): return self.queue.get().split('\n')
+  def read(self): return self.queue.get().split(' ')
 
-  # Not needed but will be called on stderr and stdout
+  # Not needed but will be called on stderr and stdout so for error passing
   def flush(self): pass
 
 
 def run_program(folder_adderss, queued_stream):
-  sys.stderr =  queued_stream
-  sys.stdout = queued_stream
-  ShareSphere().run(folder_adderss)
+  #sys.stderr =  queued_stream
+  #sys.stdout = queued_stream
+  start_server(queued_stream, folder_adderss)
 
 
 def initializer():
@@ -59,17 +59,19 @@ def initializer():
   while True:
     read_mem = shared_mem.read()
     ip = None
-    
-    for output in read_mem:
-      if 'Running on' in output and '127' not in output and '0.0.0.0' not in output:
-        ip = output[21:]
-        break
-    else:
-      continue
-
-    label_2.configure(text=ip)
-    label_2.bind('<Button-1>', lambda e: webbrowser.open_new_tab(f"http://{ip}"))
-    break
+    if read_mem:
+      ip = read_mem
+      break
+  
+  print(ip)
+  '''    for output in read_mem:
+          if 'Running on' in output and '127' not in output and '0.0.0.0' not in output:
+            ip = output[21:]
+            break
+        else:
+          continue'''
+  label_2.configure(text="\n".join(ip))
+  label_2.bind('<Button-1>', lambda _: webbrowser.open_new_tab(f"http://{ip}"))
 
 def close_process():
   global p_alive
@@ -133,8 +135,8 @@ if __name__ == "__main__":
   label_2.pack()
   button.pack()
   checkbutton.pack()
-  favicon_addr = Path(os.path.join(os.path.dirname(__file__), 'static', 'Assets', 'favicon.xbm' if UNIX_LIKE else 'favicon.ico'))
-  root.iconbitmap(favicon_addr)
+  #favicon_addr = Path(os.path.join(os.path.dirname(__file__), 'static', 'Assets', 'favicon.xbm' if UNIX_LIKE else 'favicon.ico'))
+  #root.iconbitmap(favicon_addr)
 
   p_alive = False
   atexit.register(lambda: p.terminate if p_alive else None)
